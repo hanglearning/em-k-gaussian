@@ -4,13 +4,13 @@ import random
 import operator
 import math
 
-# dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-# K = sys.argv[2]
-# iterations = sys.argv[3]
+dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
+K = sys.argv[2]
+iterations = sys.argv[3]
 
-dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
-K = 3
-iterations = 1000
+# dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
+# K = 3
+# iterations = 1000
 
 # initialize params
 
@@ -48,6 +48,8 @@ def initialize_mu_K_means():
 
 means, clusters = initialize_mu_K_means()
 
+print("clusters", clusters)
+
 # based on the clusters calculated from K-means, initialize stand_deviation and variance for each model
 def initialize_std_and_variance():
     variances = []
@@ -73,6 +75,8 @@ alphas = [alpha/temp_sum for alpha in alphas]
 models_list =[]
 for i in range(K):
     models_list.append({'mu': means[i], 'std': stds[i], 'variance': variances[i], 'alpha':alphas[i]})
+
+print("Before", models_list)
 
 # begin EM-algorithm
 
@@ -118,18 +122,4 @@ for i in range(iterations):
         # re-calculate variance
         models_list[model_iter]['variance'] = (1/nk) * variance_k_temp_sum
 
-print(models_list)
-
-
-
-
-
-
-
-# data_points_dict = {}
-# for data_iter in data_list:
-#     data_points_dict[data_iter] = {}
-#     data_points_dict[data_iter][data_list[data_iter]] = []
-
-
-# for i in range(iterations):
+print("after", models_list)
