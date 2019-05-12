@@ -5,8 +5,8 @@ import operator
 import math
 
 dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-K = sys.argv[2]
-iterations = sys.argv[3]
+K = int(sys.argv[2])
+iterations = int(sys.argv[3])
 
 # dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
 # K = 3
