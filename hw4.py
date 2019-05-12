@@ -4,13 +4,13 @@ import random
 import operator
 import math
 
-dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-K = int(sys.argv[2])
-iterations = int(sys.argv[3])
+# dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
+# K = int(sys.argv[2])
+# iterations = int(sys.argv[3])
 
-# dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
-# K = 3
-# iterations = 1000
+dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
+K = 5
+iterations = 1000
 
 # initialize params
 
@@ -48,7 +48,7 @@ def initialize_mu_K_means():
 
 means, clusters = initialize_mu_K_means()
 
-print("clusters", clusters)
+print("clusters", clusters.keys())
 
 # based on the clusters calculated from K-means, initialize stand_deviation and variance for each model
 def initialize_std_and_variance():
@@ -89,7 +89,10 @@ for data_point in data_list:
 
 # helper function for calculating PDF of Gaussian
 def gaussian_pdf(mean, std, variance, data_point):
-    return 1/(std * math.sqrt(2 * math.pi)) * math.exp(-(data_point - mean)**2 / (2 *variance))
+    try:
+        return 1/(std * math.sqrt(2 * math.pi)) * math.exp(-(data_point - mean)**2 / (2 *variance))
+    except:
+        return 0
 
 # begin learning
 for i in range(iterations):
@@ -120,6 +123,8 @@ for i in range(iterations):
         # re-calculate mu
         models_list[model_iter]['mu'] = (1/nk) * mu_k_temp_sum
         # re-calculate variance
+        if (1/nk) * variance_k_temp_sum == 0:
+            print()
         models_list[model_iter]['variance'] = (1/nk) * variance_k_temp_sum
 
 print("after", models_list)
