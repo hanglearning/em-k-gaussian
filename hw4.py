@@ -176,4 +176,5 @@ for data_dict in data_points_dict_list:
 
 
 print("=============================================")
-print(f"Log likelihood of these data generated from this mixture of models is: {log_likelihood_whole_data}")
+# print(f"Log likelihood of these data generated from this mixture of models is: {log_likelihood_whole_data}")
+print(f"Log likelihood: {log_likelihood_whole_data}")
