@@ -4,23 +4,23 @@ import random
 import operator
 import math
 
-dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-K = int(sys.argv[2])
-iterations = int(sys.argv[3])
+# dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
+# K = int(sys.argv[2])
+# iterations = int(sys.argv[3])
 # By default we use k-means to initialize mu for each model and we don't assign variance as 1
 variance_one = False
 km_algo = True
 
 # https://stackoverflow.com/questions/41006622/how-to-write-boolean-command-line-arguments-with-python
-try:
-  km_algo = sys.argv[4].lower() == 't'
-  variance_one = sys.argv[5].lower() == 't'
-except:
-    pass
+# try:
+#   km_algo = sys.argv[4].lower() == 't'
+#   variance_one = sys.argv[5].lower() == 't'
+# except:
+#     pass
 
-# dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
-# K = 3
-# iterations = 1000
+dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
+K = 3
+iterations = 100
 
 # initialize params
 
@@ -126,12 +126,12 @@ print_model_params(models_list)
 data_points_dict_list = []
 for data_point in data_list:
     # the list stored in {data_point: []} is used to store k omegles for this data point, and its index could indicate K, like index 0 means omegle1 for model 1 for this data_point, index 1 means omegle2 for model 2
-    data_points_dict_list.append({data_point: [0] * K})
+    data_points_dict_list.append({data_point:{'omegle_ks': [0] * K, 'z_ks': [0] * K,}})
 
 # helper function for calculating PDF of Gaussian
 def gaussian_pdf(mean, std, variance, data_point):
     try:
-        return 1/(std * math.sqrt(2 * math.pi)) * math.exp(-(data_point - mean)**2 / (2 *variance))
+        return 1/(std * math.sqrt(2 * math.pi)) * math.exp(-(data_point - mean)**2 / (2 * variance))
     except:
         print("Warning: wik calculated as 0 leading to variance 0 for this model.")
         return 0
@@ -143,10 +143,14 @@ for i in range(iterations):
         # https://stackoverflow.com/questions/3545331/how-can-i-get-dictionary-key-as-variable-directly-in-python-not-by-searching-fr
         data_point = list(data_dict.keys())[0]
         omegle_numerator_each_model = []
+        z_numerator_each_model = []
         for model in models_list:
-            omegle_numerator_each_model.append(gaussian_pdf(model['mu'], model['std'], model['variance'], data_point) * model['alpha'])
+            gaussian_likelihood = gaussian_pdf(model['mu'], model['std'], model['variance'], data_point)
+            omegle_numerator_each_model.append(gaussian_likelihood * model['alpha'])
+            z_numerator_each_model.append(gaussian_likelihood)
         for model_iter in range(K):
-            data_dict[data_point][model_iter] = omegle_numerator_each_model[model_iter]/sum(omegle_numerator_each_model)
+            data_dict[data_point]['omegle_ks'][model_iter] = omegle_numerator_each_model[model_iter]/sum(omegle_numerator_each_model)
+            data_dict[data_point]['z_ks'][model_iter] = z_numerator_each_model[model_iter]/sum(z_numerator_each_model)
     # M step
     for model_iter in range(K):
         # calculate nk, mu_k_temp_sum, variance_k_temp_sum
@@ -155,7 +159,7 @@ for i in range(iterations):
         variance_k_temp_sum = 0
         mu_k_temp_sum = 0
         for data_dict in data_points_dict_list:
-            omegle_k = list(data_dict.values())[0][model_iter]
+            omegle_k = list(data_dict.values())[0]['omegle_ks'][model_iter]
             data_point_val = list(data_dict.keys())[0]
             nk += omegle_k
             mu_k_temp_sum += omegle_k * data_point_val
@@ -171,3 +175,19 @@ for i in range(iterations):
 print("=============================================")
 print("After EM-algorithm")
 print_model_params(models_list)
+
+# calculate the log likelihood of the whole data
+log_likelihood_whole_data = 0
+for data_dict in data_points_dict_list:
+    data_point = list(data_dict.keys())[0]
+    numerator_sum_in_exp = 0
+    for model_iter in range(K):
+        zik = data_dict[data_point]['z_ks'][model_iter]
+        model = models_list[model_iter]
+        numerator_sum_in_exp += -1 * zik * (data_point - model['mu']) ** 2
+        likelihood_each_data = 1/(model['std'] * math.sqrt(2 * math.pi)) * math.exp(numerator_sum_in_exp / (2 * model['variance']))
+    log_likelihood_whole_data += math.log(likelihood_each_data)
+
+
+print("=============================================")
+print(f"Log likelihood of these data generated from this mixture of models is: {log_likelihood_whole_data}")
