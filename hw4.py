@@ -11,6 +11,7 @@ iterations = int(sys.argv[3])
 variance_one = False
 km_algo = True
 
+# https://stackoverflow.com/questions/41006622/how-to-write-boolean-command-line-arguments-with-python
 try:
   km_algo = sys.argv[4].lower() == 't'
   variance_one = sys.argv[5].lower() == 't'
@@ -40,6 +41,7 @@ def initialize_mu_K_means():
     # To answer the question "Is the result sensitive to the initial values?", we provide two ways to assgin the means(theta) here
     # If km_algo is set to False, meaning we don't use k-means to assign the means for theta, then we just return the randomly selected centroids
     if not km_algo:
+        print("Randomly assign thetas.")
         cluster_dict = dict([(key, []) for key in new_centroids])
         # randomly assign K clusters to calculate std and variance later
         # https://stackoverflow.com/questions/3352737/python-randomly-partition-a-list-into-n-nearly-equal-parts?lq=1
@@ -50,6 +52,7 @@ def initialize_mu_K_means():
             cluster_dict[random_centroid] = clusters_list[clusters_list_index]
             clusters_list_index += 1
     else:
+        print("Using K-means to assign thetas.")
         # check for convergence
         while old_centroids != new_centroids:
             # assign each data point to its closest centroid
@@ -71,6 +74,9 @@ def initialize_mu_K_means():
 means, clusters = initialize_mu_K_means()
 
 # print("clusters", clusters)
+
+if variance_one:
+    print("Variance are known as 1 for all models.")
 
 # based on the clusters calculated from K-means, initialize stand_deviation and variance for each model
 def initialize_std_and_variance():
@@ -109,9 +115,9 @@ def print_model_params(models_list):
         print("variance:", models_list[i]['variance'])
         print("alpha:", models_list[i]['alpha'])
 
+print("=============================================")
 print("Before EM-algorithm")
 print_model_params(models_list)
-print("=============================================")
 
 # begin EM-algorithm
 
@@ -162,5 +168,6 @@ for i in range(iterations):
         if not variance_one:
             models_list[model_iter]['variance'] = (1/nk) * variance_k_temp_sum
 
+print("=============================================")
 print("After EM-algorithm")
 print_model_params(models_list)
