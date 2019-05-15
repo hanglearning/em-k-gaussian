@@ -4,27 +4,21 @@ import random
 import operator
 import math
 
-# dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-# K = int(sys.argv[2])
-# iterations = int(sys.argv[3])
+dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
+K = int(sys.argv[2])
+iterations = int(sys.argv[3])
 # By default we use k-means to initialize mu for each model and we don't assign variance as 1
 variance_one = False
 km_algo = True
 
-# https://stackoverflow.com/questions/41006622/how-to-write-boolean-command-line-arguments-with-python
-# try:
-#   km_algo = sys.argv[4].lower() == 't'
-#   variance_one = sys.argv[5].lower() == 't'
-# except:
-#     pass
-
-dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
-K = 3
-iterations = 100
+try:
+  km_algo = sys.argv[4].lower() == 't'
+  variance_one = sys.argv[5].lower() == 't'
+except:
+    pass
 
 # initialize params
 
-# read lines as a list https://qiita.com/visualskyrim/items/1922429a07ca5f974467
 data_list = [float(line.rstrip('\n')) for line in open(dataset_dir)]
 data_length = len(data_list)
 
@@ -44,7 +38,6 @@ def initialize_mu_K_means():
         print("Randomly assign thetas.")
         cluster_dict = dict([(key, []) for key in new_centroids])
         # randomly assign K clusters to calculate std and variance later
-        # https://stackoverflow.com/questions/3352737/python-randomly-partition-a-list-into-n-nearly-equal-parts?lq=1
         random.shuffle(data_list)
         clusters_list = [data_list[i::K] for i in range(K)]
         clusters_list_index = 0
@@ -61,7 +54,6 @@ def initialize_mu_K_means():
             for data_point in data_list:
                 distance_dict = {}
                 for centroid in cluster_dict:
-                    # https://www.geeksforgeeks.org/abs-in-python/
                     distance_dict[centroid] = abs(data_point - centroid)
                 best_centroid = min(distance_dict.items(), key=operator.itemgetter(1))[0]
                 cluster_dict[best_centroid].append(data_point)
@@ -72,8 +64,6 @@ def initialize_mu_K_means():
     return new_centroids, cluster_dict
 
 means, clusters = initialize_mu_K_means()
-
-# print("clusters", clusters)
 
 if variance_one:
     print("Variance are known as 1 for all models.")
@@ -89,7 +79,6 @@ def initialize_std_and_variance():
             for data_point in clusters[mean]:
                 variance_temp += (data_point - mean) ** 2
             variances.append(1/len(clusters[mean]) * variance_temp)
-    # https://stackoverflow.com/questions/26894227/sum-of-squares-in-a-list-in-one-line
     stds = list(map(lambda variance:math.sqrt(variance), variances))
     return stds, variances
     
@@ -97,7 +86,6 @@ stds, variances = initialize_std_and_variance()
 
 # initialize alphas
 # A list of random numbs sum to 1
-# https://stackoverflow.com/questions/18659858/generating-a-list-of-random-numbers-summing-to-1
 alphas = [random.random() for i in range(K)]
 temp_sum = sum(alphas)
 alphas = [alpha/temp_sum for alpha in alphas]
@@ -122,7 +110,6 @@ print_model_params(models_list)
 # begin EM-algorithm
 
 # construct data_points_dict
-# https://stackoverflow.com/questions/671403/memory-efficiency-one-large-dictionary-or-a-dictionary-of-smaller-dictionaries
 data_points_dict_list = []
 for data_point in data_list:
     # the list stored in {data_point: []} is used to store k omegles for this data point, and its index could indicate K, like index 0 means omegle1 for model 1 for this data_point, index 1 means omegle2 for model 2
@@ -140,7 +127,6 @@ def gaussian_pdf(mean, std, variance, data_point):
 for i in range(iterations):
     # E step
     for data_dict in data_points_dict_list:
-        # https://stackoverflow.com/questions/3545331/how-can-i-get-dictionary-key-as-variable-directly-in-python-not-by-searching-fr
         data_point = list(data_dict.keys())[0]
         omegle_numerator_each_model = []
         z_numerator_each_model = []
