@@ -4,13 +4,22 @@ import random
 import operator
 import math
 
-# dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
-# K = int(sys.argv[2])
-# iterations = int(sys.argv[3])
+dataset_dir = os.path.join(os.getcwd(), sys.argv[1])
+K = int(sys.argv[2])
+iterations = int(sys.argv[3])
+# By default we use k-means to initialize mu for each model and we don't assign variance as 1
+variance_one = False
+km_algo = True
 
-dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
-K = 5
-iterations = 1000
+try:
+  km_algo = sys.argv[4].lower() == 't'
+  variance_one = sys.argv[5].lower() == 't'
+except:
+    pass
+
+# dataset_dir = "/Users/chenhang91/TEMP/HW4Group/em_data.txt"
+# K = 3
+# iterations = 1000
 
 # initialize params
 
@@ -28,36 +37,52 @@ def initialize_mu_K_means():
         while random_point in new_centroids:
             random_point = data_list[random.randint(0, data_length-1)]
         new_centroids.append(random_point)
-    # check for convergence
-    while old_centroids != new_centroids:
-        # assign each data point to its closest centroid
-        old_centroids = new_centroids
-        cluster_dict = dict([(key, []) for key in old_centroids])
-        for data_point in data_list:
-            distance_dict = {}
-            for centroid in cluster_dict:
-                # https://www.geeksforgeeks.org/abs-in-python/
-                distance_dict[centroid] = abs(data_point - centroid)
-            best_centroid = min(distance_dict.items(), key=operator.itemgetter(1))[0]
-            cluster_dict[best_centroid].append(data_point)
-        # recalculate centroids(mean value, mu) for each cluster
-        new_centroids = []
-        for cluster in cluster_dict:
-            new_centroids.append(sum(cluster_dict[cluster])/len(cluster_dict[cluster]))
+    # To answer the question "Is the result sensitive to the initial values?", we provide two ways to assgin the means(theta) here
+    # If km_algo is set to False, meaning we don't use k-means to assign the means for theta, then we just return the randomly selected centroids
+    if not km_algo:
+        cluster_dict = dict([(key, []) for key in new_centroids])
+        # randomly assign K clusters to calculate std and variance later
+        # https://stackoverflow.com/questions/3352737/python-randomly-partition-a-list-into-n-nearly-equal-parts?lq=1
+        random.shuffle(data_list)
+        clusters_list = [data_list[i::K] for i in range(K)]
+        clusters_list_index = 0
+        for random_centroid in cluster_dict:
+            cluster_dict[random_centroid] = clusters_list[clusters_list_index]
+            clusters_list_index += 1
+    else:
+        # check for convergence
+        while old_centroids != new_centroids:
+            # assign each data point to its closest centroid
+            old_centroids = new_centroids
+            cluster_dict = dict([(key, []) for key in old_centroids])
+            for data_point in data_list:
+                distance_dict = {}
+                for centroid in cluster_dict:
+                    # https://www.geeksforgeeks.org/abs-in-python/
+                    distance_dict[centroid] = abs(data_point - centroid)
+                best_centroid = min(distance_dict.items(), key=operator.itemgetter(1))[0]
+                cluster_dict[best_centroid].append(data_point)
+            # recalculate centroids(mean value, mu) for each cluster
+            new_centroids = []
+            for cluster in cluster_dict:
+                new_centroids.append(sum(cluster_dict[cluster])/len(cluster_dict[cluster]))
     return new_centroids, cluster_dict
 
 means, clusters = initialize_mu_K_means()
 
-print("clusters", clusters.keys())
+# print("clusters", clusters)
 
 # based on the clusters calculated from K-means, initialize stand_deviation and variance for each model
 def initialize_std_and_variance():
-    variances = []
+    variances = []        
     for mean in means:
-        variance_temp = 0
-        for data_point in clusters[mean]:
-            variance_temp += (data_point - mean) ** 2
-        variances.append(1/len(clusters[mean]) * variance_temp)
+        if variance_one:
+            variances.append(1)
+        else:
+            variance_temp = 0
+            for data_point in clusters[mean]:
+                variance_temp += (data_point - mean) ** 2
+            variances.append(1/len(clusters[mean]) * variance_temp)
     # https://stackoverflow.com/questions/26894227/sum-of-squares-in-a-list-in-one-line
     stds = list(map(lambda variance:math.sqrt(variance), variances))
     return stds, variances
@@ -76,7 +101,17 @@ models_list =[]
 for i in range(K):
     models_list.append({'mu': means[i], 'std': stds[i], 'variance': variances[i], 'alpha':alphas[i]})
 
-print("Before", models_list)
+# helper function to print the params for the model
+def print_model_params(models_list):
+    for i in range(K):
+        print(f"\nModel {i + 1}")
+        print("mu:", models_list[i]['mu'])
+        print("variance:", models_list[i]['variance'])
+        print("alpha:", models_list[i]['alpha'])
+
+print("Before EM-algorithm")
+print_model_params(models_list)
+print("=============================================")
 
 # begin EM-algorithm
 
@@ -92,6 +127,7 @@ def gaussian_pdf(mean, std, variance, data_point):
     try:
         return 1/(std * math.sqrt(2 * math.pi)) * math.exp(-(data_point - mean)**2 / (2 *variance))
     except:
+        print("Warning: wik calculated as 0 leading to variance 0 for this model.")
         return 0
 
 # begin learning
@@ -122,9 +158,9 @@ for i in range(iterations):
         models_list[model_iter]['alpha'] = nk/data_length
         # re-calculate mu
         models_list[model_iter]['mu'] = (1/nk) * mu_k_temp_sum
-        # re-calculate variance
-        if (1/nk) * variance_k_temp_sum == 0:
-            print()
-        models_list[model_iter]['variance'] = (1/nk) * variance_k_temp_sum
+        # re-calculate variance (if not known as 1)
+        if not variance_one:
+            models_list[model_iter]['variance'] = (1/nk) * variance_k_temp_sum
 
-print("after", models_list)
+print("After EM-algorithm")
+print_model_params(models_list)
